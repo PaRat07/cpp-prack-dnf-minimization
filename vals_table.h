@@ -7,119 +7,62 @@
 
 #include <vector>
 #include <iostream>
+#include <chrono>
+#include <random>
 
 class ValuesTable : public sf::Drawable {
  public:
     static sf::Vector2f value_size_;
     static constexpr float net_thickness_ = 3.f;
 
-    ValuesTable(uint64_t vars_amount, uint64_t f_ind)
-        : variables_amount_(vars_amount)
-        , function_number_(f_ind)
-        , vals_(CalcAllCombinations(1, vars_amount))
-    {
-    }
+    ValuesTable(uint64_t vars_amount, uint64_t f_ind);
 
-    void SetSize(sf::Vector2f size) {
-        size_ = size;
-    }
+    void SetSize(sf::Vector2f size);
 
-    void SetPosition(sf::Vector2f pos) {
-        pos_ = pos;
-    }
+    void SetPosition(sf::Vector2f pos);
 
-    void MoveX(float dist) {
-        cur_pos_.x = std::max(0.f, std::min(GetFullSize().x - size_.x, cur_pos_.x - dist));
-    }
+    void MoveX(float dist);
 
-    void MoveY(float dist) {
-        cur_pos_.y = std::max(0.f, std::min(GetFullSize().y - size_.y, cur_pos_.y - dist));
-    }
+    void MoveY(float dist);
 
-    void draw(sf::RenderTarget& target, sf::RenderStates states) const override {
-        sf::RoundedRectangleShape back(size_);
-        back.setFillColor(background_color);
-        back.setRoundRadius(5);
-        back.setOutlineColor(outline_color);
-        back.setOutlineThickness(3);
-        back.setPosition(pos_);
-        target.draw(back);
-
-        sf::RenderTexture texture;
-        texture.create(size_.x - 10, size_.y - 10);
-        texture.clear(background_color);
-
-
-        sf::RectangleShape line(sf::Vector2f(net_thickness_, ((1 << variables_amount_) + 1) * value_size_.y + net_thickness_));
-        line.setFillColor(outline_color);
-        for (int i = 0; i <= vals_.size() + 1; ++i) {
-            line.setPosition(i * value_size_.x + 5 - cur_pos_.x, 5 - cur_pos_.y);
-            texture.draw(line);
-        }
-
-        line.setSize(sf::Vector2f((1 << variables_amount_) * value_size_.x + net_thickness_, net_thickness_));
-        for (int i = 0; i <= (1 << variables_amount_) + 1; ++i) {
-            line.setPosition(5 - cur_pos_.x, i * value_size_.y + 5 - cur_pos_.y);
-            texture.draw(line);
-        }
-
-        CenterPositionedString val;
-
-        for (int i = 1; i <= vals_.size(); ++i) {
-            for (int j = 1; j <= (1 << variables_amount_); ++j) {
-                val.setString(vals_[i - 1].GetVal(j - 1));
-                val.setPosition(value_size_.x * i + 5 - cur_pos_.x + value_size_.x / 2, value_size_.y * j + 5 - cur_pos_.y + value_size_.y / 2);
-                texture.draw(val);
+    void RemoveNextAtFunc0() {
+        for (uint64_t i = 1, func_num_copy = function_number_; i < vals_.size(); ++i, func_num_copy >>= 1) {
+            if (!(func_num_copy & 1)) {
+                FillSameInColumn(cur_column_, vals_[cur_column_].GetVal(i), GetRandomColor());
             }
         }
-
-        for (int i = 1; i <= vals_.size(); ++i) {
-            val.setString(vals_[i - 1].GetName());
-            val.setPosition(5 + i * value_size_.x - cur_pos_.x + value_size_.x / 2, 5 - cur_pos_.y + value_size_.y / 2);
-            texture.draw(val);
-        }
-
-        val.setPosition(value_size_.x / 2 + 5 - cur_pos_.x, value_size_.y / 2 + 5 - cur_pos_.y);
-        val.setString("f");
-        texture.draw(val);
-
-        uint64_t func_copy = function_number_;
-        for (int i = 0; i <= vals_.size(); ++i) {
-            val.setPosition(value_size_.x / 2 - cur_pos_.x + 5, value_size_.y * (i + 1.5) - cur_pos_.y + 5);
-            val.setString(func_copy & 1 ? "1" : "0");
-            texture.draw(val);
-            func_copy >>= 1;
-        }
-
-        texture.display();
-        sf::Sprite sprite(texture.getTexture());
-        sprite.setPosition(pos_.x + 5, pos_.y + 5);
-        target.draw(sprite);
+        ++cur_column_;
     }
+
+    void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 
  private:
     sf::Vector2f size_, pos_, cur_pos_;
-    uint64_t variables_amount_, function_number_;
+    uint64_t variables_amount_, function_number_, cur_column_ = 0;
     std::vector<VariablesCombination> vals_;
+    std::vector<std::vector<sf::Color>> colors_;
 
-    static std::vector<VariablesCombination> CalcAllCombinations(int var, int vars_amount) {
-        if (var > vars_amount) {
-            return {};
+    static sf::Color GetRandomColor() {
+        static std::mt19937 gen(std::chrono::high_resolution_clock::now().time_since_epoch().count());
+        uint32_t rand_num = gen();
+        uint8_t r = 0;
+        for (int i = 1; i < 8; ++i) {
+            r |= rand_num & (1 << i);
         }
-
-        std::vector<VariablesCombination> all_with_less = CalcAllCombinations(var + 1, vars_amount);
-        std::vector<VariablesCombination> ans;
-        ans.push_back(VariablesCombination({ VariableInFunction(var) }));
-        std::copy(all_with_less.begin(), all_with_less.end(), std::back_inserter(ans));
-        for (VariablesCombination i : all_with_less) {
-            i.PushFront(VariableInFunction(var));
-            ans.push_back(i);
+        uint8_t g = 0;
+        for (int i = 8; i < 16; ++i) {
+            g |= (rand_num & (1 << i)) >> 8;
         }
-
-        return ans;
+        uint8_t b = 0;
+        for (int i = 16; i < 24; ++i) {
+            g |= (rand_num & (1 << i)) >> 16;
+        }
+        return { r, g, b };
     }
 
-    sf::Vector2f GetFullSize() const {
-        return { ((1 << variables_amount_) + 0.5f) * value_size_.x, ((1 << variables_amount_) + 2) * value_size_.y };
-    }
+    static std::vector<VariablesCombination> CalcAllCombinations(int var, int vars_amount);
+
+    sf::Vector2f GetFullSize() const;
+
+    void FillSameInColumn(int column, std::string val, sf::Color color);
 };

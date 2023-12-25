@@ -2,8 +2,8 @@
 
 #include "SFML/Graphics.hpp"
 
-#include "../prack-numbers-systems/rounded_rectangle.h"
-#include "../prack-numbers-systems/general_data.h"
+#include "rounded_rectangle.h"
+#include "general_data.h"
 
 class InOutputField : public sf::Drawable {
  public:

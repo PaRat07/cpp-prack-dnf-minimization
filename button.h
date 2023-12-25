@@ -8,7 +8,7 @@
 
 class Button : public sf::Drawable {
  public:
-    Button(sf::Vector2f pos, sf::Vector2f sz, std::string text, const std::function<void()> &cb);
+    Button(sf::Vector2f pos, sf::Vector2f sz, std::string path, const std::function<void()> &cb);
 
     void Click(sf::Vector2f pos) const;
 
@@ -16,6 +16,6 @@ class Button : public sf::Drawable {
 
  private:
     const std::function<void()> &callback_;
-    std::string text_;
+    std::string path_to_png_;
     sf::Vector2f size_, pos_;
 };

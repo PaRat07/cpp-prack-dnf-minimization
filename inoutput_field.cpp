@@ -23,7 +23,7 @@ void InOutputField::draw(sf::RenderTarget &target, sf::RenderStates states) cons
     text.setFont(font);
     text.setString(data_);
     text.setCharacterSize(letter_size);
-    text.setPosition(sf::Vector2f(pos_.x, pos_.y + size_.y / 2 - letter_size));
+    text.setPosition(sf::Vector2f(pos_.x, pos_.y + size_.y / 2 - letter_size * 0.75));
     text.setFillColor(text_color);
     target.draw(text);
 }

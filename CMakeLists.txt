@@ -25,7 +25,9 @@ add_executable(prack_numbers_system
         variable_combination.h
         rounded_rectangle.cpp
         center_positioned_string.cpp
-        center_positioned_string.h)
+        center_positioned_string.h
+        inoutput_field.cpp
+        button.cpp)
 target_link_libraries(prack_numbers_system PRIVATE sfml-graphics sfml-system sfml-window)
 target_compile_features(prack_numbers_system PRIVATE cxx_std_20)
 
