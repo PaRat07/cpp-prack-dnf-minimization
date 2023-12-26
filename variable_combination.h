@@ -33,8 +33,18 @@ class VariablesCombination {
         vars_.push_front(var);
     }
 
-    auto operator<=>(const VariablesCombination &other) const {
-        return std::lexicographical_compare_three_way(vars_.begin(), vars_.end(), other.vars_.begin(), other.vars_.end());
+    bool operator<(const VariablesCombination &other) const {
+        if (vars_.size() < other.vars_.size()) {
+            return true;
+        } else if (vars_.size() > other.vars_.size()) {
+            return false;
+        } else {
+            return std::lexicographical_compare(vars_.begin(), vars_.end(), other.vars_.begin(), other.vars_.end());
+        }
+    }
+
+    const std::deque<VariableInFunction> &GetVars() const {
+        return vars_;
     }
 
  private:

@@ -9,6 +9,7 @@
 #include <iostream>
 #include <chrono>
 #include <random>
+#include <set>
 
 class ValuesTable : public sf::Drawable {
  public:
@@ -25,13 +26,16 @@ class ValuesTable : public sf::Drawable {
 
     void MoveY(float dist);
 
-    void RemoveNextAtFunc0() {
-        for (uint64_t i = 1, func_num_copy = function_number_; i < vals_.size(); ++i, func_num_copy >>= 1) {
-            if (!(func_num_copy & 1)) {
-                FillSameInColumn(cur_column_, vals_[cur_column_].GetVal(i), GetRandomColor());
-            }
+    std::optional<std::string> NextStepMinimizing() {
+        if (cur_column_ == -1) {
+            return std::nullopt;
         }
-        ++cur_column_;
+        if (cur_column_ < vals_.size()) {
+            RemoveNextAtFunc0();
+            return std::nullopt;
+        } else {
+            return Reduce();
+        }
     }
 
     void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
@@ -65,4 +69,91 @@ class ValuesTable : public sf::Drawable {
     sf::Vector2f GetFullSize() const;
 
     void FillSameInColumn(int column, std::string val, sf::Color color);
+
+    void RemoveNextAtFunc0() {
+        for (uint64_t i = 0, func_num_copy = function_number_; i <= vals_.size(); ++i, func_num_copy >>= 1) {
+            if (!(func_num_copy & 1)) {
+                FillSameInColumn(cur_column_, vals_[cur_column_].GetVal(i), GetRandomColor());
+            }
+        }
+        ++cur_column_;
+    }
+
+    struct Variant {
+        VariablesCombination comb;
+        std::string consist;
+
+        Variant(VariablesCombination com, std::string con)
+            : comb(std::move(com))
+            , consist(std::move(con))
+        {}
+
+        bool operator<(const Variant &other) const {
+            return std::pair(comb, consist) < std::pair(comb, consist);
+        }
+    };
+
+    std::string Reduce() {
+        std::map<Variant, std::set<int>> variants;
+
+        for (int i = 1; i <= vals_.size(); ++i) {
+            for (int j = 1; j <= (1 << variables_amount_); ++j) {
+                if (colors_[i - 1][j - 1] == text_color) {
+                    variants[Variant(vals_[i - 1], vals_[i - 1].GetVal(j - 1))].insert(j);
+                }
+            }
+        }
+
+        int amount1 = 0;
+        uint64_t func_copy = function_number_;
+        while (func_copy) {
+            if (func_copy & 1) {
+                ++amount1;
+            }
+            func_copy >>= 1;
+        }
+
+        auto combs = CalcAllCombinationsOfVariants(variants.begin(), variants);
+        std::map<int, std::vector<std::vector<Variant>>> full_combs_for_length;
+        for (const auto &i : combs) {
+            std::set<int> has;
+            for (const Variant &v : i) {
+                has.insert(variants[v].begin(), variants[v].end());
+            }
+            if (has.size() == amount1) {
+                full_combs_for_length[std::transform_reduce(i.begin(), i.end(), 0, std::plus<>{}, [] (const Variant &v) { return v.comb.GetVars().size(); })].push_back(i);
+            }
+        }
+        std::string ans;
+        for (const auto &i : std::prev(full_combs_for_length.end())->second) {
+            std::string var;
+            for (const auto &j : i) {
+                for (int l = 0; l < j.consist.size(); ++l) {
+                    var += (j.consist[l] == '1' ? j.comb.GetVars()[l].GetName() : "(!"s + j.comb.GetVars()[l].GetName() + ")"s);
+                }
+                var += " v ";
+            }
+            var.resize(var.size() - 3);
+            ans += var + "\n";
+        }
+        return ans;
+    }
+
+
+    static std::vector<std::vector<Variant>> CalcAllCombinationsOfVariants(std::map<Variant, std::set<int>>::const_iterator cur, const std::map<Variant, std::set<int>> &variants) {
+        if (cur == variants.end()) {
+            return {};
+        }
+
+        std::vector<std::vector<Variant>> all_with_less = CalcAllCombinationsOfVariants(std::next(cur), variants);
+        std::vector<std::vector<Variant>> ans;
+        ans.push_back(std::vector<Variant>{ cur->first });
+        std::copy(all_with_less.begin(), all_with_less.end(), std::back_inserter(ans));
+        for (auto i : all_with_less) {
+            i.push_back(cur->first);
+            ans.push_back(i);
+        }
+
+        return ans;
+    }
 };

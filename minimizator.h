@@ -17,11 +17,14 @@ class Minimizator {
         , variables_amount_("Variables amount", font, letter_size)
         , func_num_(sf::Vector2f(620, 40), sf::Vector2f(300, 40))
         , vars_amount_(sf::Vector2f(620, 120), sf::Vector2f(300, 40))
+        , ans_("dfghjk", font, letter_size)
         , but_(sf::Vector2f(620, 170), sf::Vector2f(300, 240), "../../zhdun.png", [&]() { Draw(); })
     {
+        ans_.setFillColor(text_color);
         function_number_.setFillColor(text_color);
         variables_amount_.setFillColor(text_color);
 
+        ans_.setPosition(10, 420);
         function_number_.setPosition(620, 10);
         variables_amount_.setPosition(620, 90);
 
@@ -35,17 +38,23 @@ class Minimizator {
                 switch (event.type) {
                     case sf::Event::TextEntered: {
                         switch (event.text.unicode) {
+                            // Esc
                             case 27: {
                                 win_.close();
                                 break;
                             }
+                            // Enter
                             case 13: {
-                                data_->RemoveNextAtFunc0();
+                                std::optional<std::string> s = data_->NextStepMinimizing();
+                                if (s.has_value()) {
+                                    ans_.setString(*s);
+                                }
+
                                 Render();
                                 break;
                             }
                             default: {
-                                std::cout << event.text.unicode << std::endl;
+//                                std::cout << event.text.unicode << std::endl;
                                 func_num_.Write(event.text.unicode);
                                 vars_amount_.Write(event.text.unicode);
                                 Render();
@@ -84,8 +93,9 @@ class Minimizator {
         data_->SetSize(sf::Vector2f(600, 400));
         data_->SetPosition(sf::Vector2f(10, 10));
     }
+
  private:
-    sf::Text function_number_, variables_amount_;
+    sf::Text function_number_, variables_amount_, ans_;
     InOutputField func_num_, vars_amount_;
     Button but_;
     sf::RenderWindow win_;
@@ -99,6 +109,7 @@ class Minimizator {
         win_.draw(vars_amount_);
         win_.draw(*data_);
         win_.draw(but_);
+        win_.draw(ans_);
         win_.display();
     }
 };

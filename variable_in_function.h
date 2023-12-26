@@ -16,12 +16,11 @@ class VariableInFunction {
     }
 
     [[nodiscard]] std::string GetName() const {
-        if (ind_of_var_ < 0) return "-"s + static_cast<char>('a' + (ind_of_var_ - 1));
         return ""s + static_cast<char>('a' + ind_of_var_ - 1);
     }
 
     [[nodiscard]] bool GetValueAt(int ind) const {
-        return ind / (1ll << std::abs(ind_of_var_ - 1)) % 2 == (ind_of_var_ > 0);
+        return 1 - ind / (1ll << std::abs(ind_of_var_ - 1)) % 2;
     }
 
     auto operator<=>(const VariableInFunction &other) const {

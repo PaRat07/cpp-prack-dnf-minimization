@@ -7,6 +7,7 @@ ValuesTable::ValuesTable(uint64_t vars_amount, uint64_t f_ind)
         , vals_(CalcAllCombinations(1, vars_amount))
         , colors_(vals_.size(), std::vector<sf::Color>((1 << variables_amount_), text_color))
 {
+    std::sort(vals_.begin(), vals_.end());
 }
 
 void ValuesTable::SetSize(sf::Vector2f size) {
@@ -110,7 +111,7 @@ sf::Vector2f ValuesTable::GetFullSize() const {
 }
 
 void ValuesTable::FillSameInColumn(int column, std::string val, sf::Color color) {
-    for (int i = 1; i < vals_.size(); ++i) {
+    for (int i = 0; i <= vals_.size(); ++i) {
         if (vals_[column].GetVal(i) == val) {
             colors_[column][i] = color;
         }
