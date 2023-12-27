@@ -4,6 +4,8 @@ project(prack_numbers_system LANGUAGES CXX)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 
+set(CMAKE_CXX_FLAGS "-g -DGLIBCXX_DEBUG -DGLIBCXX_DEBUG_PEDANTIC")
+
 include(FetchContent)
 FetchContent_Declare(SFML
         GIT_REPOSITORY https://github.com/SFML/SFML.git

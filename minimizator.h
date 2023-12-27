@@ -12,12 +12,12 @@
 class Minimizator {
  public:
     Minimizator()
-        : win_(sf::VideoMode(1000, 600), "Minimizator")
+        : win_(sf::VideoMode(940, 650), "Minimizator", sf::Style::Titlebar | sf::Style::Close)
         , function_number_("Function number", font, letter_size)
         , variables_amount_("Variables amount", font, letter_size)
         , func_num_(sf::Vector2f(620, 40), sf::Vector2f(300, 40))
         , vars_amount_(sf::Vector2f(620, 120), sf::Vector2f(300, 40))
-        , ans_("dfghjk", font, letter_size)
+        , ans_("", font, letter_size)
         , but_(sf::Vector2f(620, 170), sf::Vector2f(300, 240), "../../zhdun.png", [&]() { Draw(); })
     {
         ans_.setFillColor(text_color);

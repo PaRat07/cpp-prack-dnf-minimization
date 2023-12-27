@@ -27,14 +27,18 @@ class ValuesTable : public sf::Drawable {
     void MoveY(float dist);
 
     std::optional<std::string> NextStepMinimizing() {
-        if (cur_column_ == -1) {
+        if (cur_column_ == -2) {
             return std::nullopt;
-        }
-        if (cur_column_ < vals_.size()) {
+        } else if (cur_column_ == -1) {
+            cur_column_ = -2;
+            return Reduce();
+        } else if (cur_column_ < vals_.size()) {
             RemoveNextAtFunc0();
             return std::nullopt;
         } else {
-            return Reduce();
+            Absorption();
+            cur_column_ = -1;
+            return std::nullopt;
         }
     }
 
@@ -47,6 +51,7 @@ class ValuesTable : public sf::Drawable {
     std::vector<std::vector<sf::Color>> colors_;
 
     static sf::Color GetRandomColor() {
+//        return sf::Color::Red;
         static std::mt19937 gen(std::chrono::high_resolution_clock::now().time_since_epoch().count());
         uint32_t rand_num = gen();
         uint8_t r = 0;
@@ -89,7 +94,7 @@ class ValuesTable : public sf::Drawable {
         {}
 
         bool operator<(const Variant &other) const {
-            return std::pair(comb, consist) < std::pair(comb, consist);
+            return std::pair(comb, consist) < std::pair(other.comb, other.consist);
         }
     };
 
@@ -121,11 +126,11 @@ class ValuesTable : public sf::Drawable {
                 has.insert(variants[v].begin(), variants[v].end());
             }
             if (has.size() == amount1) {
-                full_combs_for_length[std::transform_reduce(i.begin(), i.end(), 0, std::plus<>{}, [] (const Variant &v) { return v.comb.GetVars().size(); })].push_back(i);
+                full_combs_for_length[i.size()].push_back(i);
             }
         }
         std::string ans;
-        for (const auto &i : std::prev(full_combs_for_length.end())->second) {
+        for (const auto &i : full_combs_for_length.begin()->second) {
             std::string var;
             for (const auto &j : i) {
                 for (int l = 0; l < j.consist.size(); ++l) {
@@ -155,5 +160,30 @@ class ValuesTable : public sf::Drawable {
         }
 
         return ans;
+    }
+
+    void FillLineWithSubstr(int line, int from, const std::string &origin, sf::Color color) {
+        if (from >= vals_.size()) return;
+
+        int ind_origin = 0;
+        for (char sym : vals_[from].GetName()) {
+            if (sym == origin[ind_origin]) {
+                ++ind_origin;
+            }
+        }
+        if (ind_origin == origin.size() && colors_[from][line] == text_color) {
+            colors_[from][line] = color;
+        }
+        FillLineWithSubstr(line, from + 1, origin, color);
+    }
+
+    void Absorption() {
+        for (int i = 0; i < (1 << variables_amount_); ++i) {
+            for (int j = 0; j < vals_.size(); ++j) {
+                if (colors_[j][i] == text_color) {
+                    FillLineWithSubstr(i, j + 1, vals_[j].GetName(), sf::Color::Red);
+                }
+            }
+        }
     }
 };
