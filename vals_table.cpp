@@ -1,7 +1,8 @@
 #include "vals_table.h"
+
 sf::Vector2f ValuesTable::value_size_ = { 75.f, 20.f };
 
-ValuesTable::ValuesTable(uint64_t vars_amount, uint64_t f_ind)
+ValuesTable::ValuesTable(int vars_amount, uint64_t f_ind)
         : variables_amount_(vars_amount)
         , function_number_(f_ind)
         , vals_(CalcAllCombinations(1, vars_amount))
@@ -36,11 +37,11 @@ void ValuesTable::draw(sf::RenderTarget &target, sf::RenderStates states) const 
     target.draw(back);
 
     sf::RenderTexture texture;
-    texture.create(size_.x - 10, size_.y - 10);
+    texture.create(static_cast<unsigned int>(size_.x) - 10, static_cast<unsigned int>(size_.y) - 10);
     texture.clear(background_color);
 
 
-    sf::RectangleShape line(sf::Vector2f(net_thickness_, ((1 << variables_amount_) + 1) * value_size_.y + net_thickness_));
+    sf::RectangleShape line(sf::Vector2f(net_thickness_, ((1ll << variables_amount_) + 1) * value_size_.y + net_thickness_));
     line.setFillColor(outline_color);
     for (int i = 0; i <= vals_.size() + 1; ++i) {
         line.setPosition(i * value_size_.x + 5 - cur_pos_.x, 5 - cur_pos_.y);
@@ -58,7 +59,7 @@ void ValuesTable::draw(sf::RenderTarget &target, sf::RenderStates states) const 
     for (int i = 1; i <= vals_.size(); ++i) {
         for (int j = 1; j <= (1 << variables_amount_); ++j) {
             val.setBackground(colors_[i - 1][j - 1]);
-            val.setString(vals_[i - 1].GetVal(j - 1));
+            val.setString(vals_[i - 1].GetVal(j - 1, variables_amount_));
             val.setPosition(value_size_.x * i + 5 - cur_pos_.x + value_size_.x / 2, value_size_.y * j + 5 - cur_pos_.y + value_size_.y / 2);
             texture.draw(val);
         }
@@ -112,8 +113,150 @@ sf::Vector2f ValuesTable::GetFullSize() const {
 
 void ValuesTable::FillSameInColumn(int column, std::string val, sf::Color color) {
     for (int i = 0; i <= vals_.size(); ++i) {
-        if (vals_[column].GetVal(i) == val) {
+        if (vals_[column].GetVal(i, variables_amount_) == val) {
             colors_[column][i] = color;
         }
     }
+}
+
+std::optional<std::string> ValuesTable::NextStepMinimizing() {
+    if (cur_column_ == -2) {
+        return std::nullopt;
+    } else if (cur_column_ == -1) {
+        cur_column_ = -2;
+        return Reduce();
+    } else if (cur_column_ < vals_.size()) {
+        RemoveNextAtFunc0();
+        return std::nullopt;
+    } else {
+        Absorption();
+        cur_column_ = -1;
+        return std::nullopt;
+    }
+}
+
+sf::Color ValuesTable::GetRandomColor() {
+    static std::mt19937 gen(std::chrono::high_resolution_clock::now().time_since_epoch().count());
+    uint32_t rand_num = gen();
+    uint8_t r = 0;
+    for (int i = 1; i < 8; ++i) {
+        r |= rand_num & (1 << i);
+    }
+    uint8_t g = 0;
+    for (int i = 8; i < 16; ++i) {
+        g |= (rand_num & (1 << i)) >> 8;
+    }
+    uint8_t b = 0;
+    for (int i = 16; i < 24; ++i) {
+        g |= (rand_num & (1 << i)) >> 16;
+    }
+    return { r, g, b };
+}
+
+void ValuesTable::RemoveNextAtFunc0() {
+    for (uint64_t i = 0, func_num_copy = function_number_; i <= vals_.size(); ++i, func_num_copy >>= 1) {
+        if (!(func_num_copy & 1)) {
+            FillSameInColumn(cur_column_, vals_[cur_column_].GetVal(i, variables_amount_), GetRandomColor());
+        }
+    }
+    ++cur_column_;
+}
+
+std::string ValuesTable::Reduce() {
+    std::map<Variant, std::set<int>> variants;
+
+    for (int i = 1; i <= vals_.size(); ++i) {
+        for (int j = 1; j <= (1 << variables_amount_); ++j) {
+            if (colors_[i - 1][j - 1] == text_color) {
+                variants[Variant(vals_[i - 1], vals_[i - 1].GetVal(j - 1, variables_amount_))].insert(j);
+            }
+        }
+    }
+
+    int amount1 = 0;
+    uint64_t func_copy = function_number_;
+    while (func_copy) {
+        if (func_copy & 1) {
+            ++amount1;
+        }
+        func_copy >>= 1;
+    }
+
+    auto combs = CalcAllCombinationsOfVariants(variants.begin(), variants);
+    std::map<int, std::vector<std::vector<Variant>>> full_combs_for_length;
+    for (const auto &i : combs) {
+        std::set<int> has;
+        for (const Variant &v : i) {
+            has.insert(variants[v].begin(), variants[v].end());
+        }
+        if (has.size() == amount1) {
+            full_combs_for_length[i.size()].push_back(i);
+        }
+    }
+    std::string ans;
+    for (const auto &i : full_combs_for_length.begin()->second) {
+        std::string var;
+        for (const auto &j : i) {
+            for (int l = 0; l < j.consist.size(); ++l) {
+                var += (j.consist[l] == '1' ? j.comb.GetVars()[l].GetName() : "(!"s + j.comb.GetVars()[l].GetName() + ")"s);
+            }
+            var += " v ";
+        }
+        var.resize(var.size() - 3);
+        ans += var + "\n";
+    }
+    return ans;
+}
+
+std::vector<std::vector<ValuesTable::Variant>> ValuesTable::CalcAllCombinationsOfVariants(std::map<ValuesTable::Variant,
+                                                                                          std::set<int>>::const_iterator cur,
+                                                                                          const std::map<Variant, std::set<int>> &variants) {
+    if (cur == variants.end()) {
+        return {};
+    }
+
+    std::vector<std::vector<Variant>> all_with_less = CalcAllCombinationsOfVariants(std::next(cur), variants);
+    std::vector<std::vector<Variant>> ans;
+    ans.push_back(std::vector<Variant>{ cur->first });
+    std::copy(all_with_less.begin(), all_with_less.end(), std::back_inserter(ans));
+    for (auto i : all_with_less) {
+        i.push_back(cur->first);
+        ans.push_back(i);
+    }
+
+    return ans;
+}
+
+void ValuesTable::FillLineWithSubstr(int line, int from, const std::string &origin, sf::Color color) {
+    if (from >= vals_.size()) return;
+
+    int ind_origin = 0;
+    for (char sym : vals_[from].GetName()) {
+        if (sym == origin[ind_origin]) {
+            ++ind_origin;
+        }
+    }
+    if (ind_origin == origin.size() && colors_[from][line] == text_color) {
+        colors_[from][line] = color;
+    }
+    FillLineWithSubstr(line, from + 1, origin, color);
+}
+
+void ValuesTable::Absorption() {
+    for (int i = 0; i < (1 << variables_amount_); ++i) {
+        for (int j = 0; j < vals_.size(); ++j) {
+            if (colors_[j][i] == text_color) {
+                FillLineWithSubstr(i, j + 1, vals_[j].GetName(), sf::Color::Red);
+            }
+        }
+    }
+}
+
+ValuesTable::Variant::Variant(VariablesCombination com, std::string con)
+        : comb(std::move(com))
+        , consist(std::move(con))
+{}
+
+bool ValuesTable::Variant::operator<(const ValuesTable::Variant &other) const {
+    return std::pair(comb, consist) < std::pair(other.comb, other.consist);
 }

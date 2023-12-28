@@ -23,7 +23,7 @@ void InOutputField::draw(sf::RenderTarget &target, sf::RenderStates states) cons
     text.setFont(font);
     text.setString(data_);
     text.setCharacterSize(letter_size);
-    text.setPosition(sf::Vector2f(pos_.x, pos_.y + size_.y / 2 - letter_size * 0.75));
+    text.setPosition(sf::Vector2f(pos_.x, pos_.y + size_.y / 2.f - letter_size * 0.75f));
     text.setFillColor(text_color);
     target.draw(text);
 }
@@ -42,7 +42,7 @@ void InOutputField::Write(sf::Uint32 event) {
                 return;
             default:
                 std::cout << event << std::endl;
-                data_.push_back(event);
+                data_.push_back(static_cast<char>(event));
         }
     }
 }

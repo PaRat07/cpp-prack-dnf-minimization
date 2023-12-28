@@ -14,10 +14,11 @@ void Button::draw(sf::RenderTarget &target, sf::RenderStates states) const {
     sf::Texture texture;
     assert(texture.loadFromFile(path_to_png_));
     sf::Sprite sprite(texture);
-    float factor = std::min(size_.x / texture.getSize().x, size_.y / texture.getSize().y) - 0.01;
+    float factor = static_cast<float>(std::min(size_.x / static_cast<float>(texture.getSize().x),
+                                               size_.y / static_cast<float>(texture.getSize().y)) - 0.01);
     sprite.setScale(factor, factor);
-    sprite.setPosition(pos_.x + size_.x / 2 - texture.getSize().x / 2 * factor,
-                       pos_.y + size_.y / 2 - texture.getSize().x / 2 * factor);
+    sprite.setPosition(pos_.x + size_.x / 2.f - static_cast<float>(texture.getSize().x) / 2.f * factor,
+                       pos_.y + size_.y / 2.f - static_cast<float>(texture.getSize().x) / 2.f * factor);
     target.draw(sprite);
 }
 

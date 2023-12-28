@@ -15,8 +15,6 @@ FetchContent_MakeAvailable(SFML)
 add_executable(prack_numbers_system
         main.cpp
         minimizator.cpp
-        value_shape.cpp
-        value_shape.h
         general_data.cpp
         general_data.h
         vals_table.cpp

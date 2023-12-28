@@ -8,42 +8,17 @@
 
 class VariablesCombination {
  public:
-    VariablesCombination(std::deque<VariableInFunction> vars)
-        : vars_(std::move(vars))
-    {
-    }
+    explicit VariablesCombination(std::deque<VariableInFunction> vars);
 
-    [[nodiscard]] std::string GetName() const {
-        std::string ans;
-        for (const auto &i : vars_) {
-            ans += i.GetName();
-        }
-        return ans;
-    }
+    [[nodiscard]] std::string GetName() const;
 
-    [[nodiscard]] std::string GetVal(int pos) const {
-        std::string ans;
-        for (const auto &i : vars_) {
-            ans += (i.GetValueAt(pos) ? '1' : '0');
-        }
-        return ans;
-    }
+    [[nodiscard]] std::string GetVal(int pos, int vars_amount) const;
 
-    void PushFront(VariableInFunction var) {
-        vars_.push_front(var);
-    }
+    void PushFront(VariableInFunction var);
 
-    bool operator<(const VariablesCombination &other) const {
-        if (vars_.size() < other.vars_.size()) {
-            return true;
-        } else if (vars_.size() > other.vars_.size()) {
-            return false;
-        } else {
-            return std::lexicographical_compare(vars_.begin(), vars_.end(), other.vars_.begin(), other.vars_.end());
-        }
-    }
+    bool operator<(const VariablesCombination &other) const;
 
-    const std::deque<VariableInFunction> &GetVars() const {
+    [[nodiscard]] const std::deque<VariableInFunction> &GetVars() const {
         return vars_;
     }
 

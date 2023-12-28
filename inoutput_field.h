@@ -19,7 +19,7 @@ class InOutputField : public sf::Drawable {
 
     void SetText(std::string s);
 
-    std::string GetText() const {
+    [[nodiscard]] const std::string &GetText() const {
         return data_;
     }
  private:
